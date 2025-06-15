@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.pharmavita.pharmacy_backend.config.utils.JwtUtil;
 import com.pharmavita.pharmacy_backend.models.records.LoginRequest;
+import com.pharmavita.pharmacy_backend.models.records.UserProfile;
 import com.pharmavita.pharmacy_backend.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,12 @@ public class AuthService {
         return jwtUtil.generateToken(userDetails);
     }
 
-   
+    public UserProfile getProfile(String email){
+        return userRepository.findByEmail(email)
+                .map(user -> new UserProfile(user.getFirstname(), user.getLastname(), user.getEmail(), user.getRole()))
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
 
 }
+
