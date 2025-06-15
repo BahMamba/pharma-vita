@@ -21,7 +21,6 @@ public class AuthService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-
     public String login(LoginRequest request){
         Authentication authentication = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.email(), request.password())
