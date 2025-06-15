@@ -31,8 +31,7 @@ public class AuthController {
 
     @GetMapping("/profile")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserProfile> getProfile(Authentication authentication){
-        UserProfile userProfile = authService.getProfile(authentication.getName());
-        return ResponseEntity.ok(userProfile);        
+    public ResponseEntity<UserProfile> getProfile(Authentication authentication) {
+        return ResponseEntity.ok(authService.getProfile(authentication.getName()));
     }
 }
