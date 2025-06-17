@@ -54,6 +54,11 @@ public class UserPharmaManagerService {
             .toList();
     }
 
+    public User getPharmacistById(Long id) {
+        return userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
+    }
+
     public User updatePharmacist(Long id, UserRequest request, String adminEmail) throws MessagingException {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
@@ -73,7 +78,7 @@ public class UserPharmaManagerService {
         user.setFirstname(request.firstname());
         user.setLastname(request.lastname());
         user.setEmail(request.email());
-        user.setRole(request.role());
+        user.setRole(Role.PHARMACIST);
         userRepository.save(user);
 
         // Journaliser l'action

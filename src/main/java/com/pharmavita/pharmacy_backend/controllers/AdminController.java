@@ -31,6 +31,12 @@ public class AdminController {
         return ResponseEntity.ok(userPharmaManagerService.listPharmacist());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getPharmacistById(@PathVariable Long id) {
+        User user = userPharmaManagerService.getPharmacistById(id);
+        return ResponseEntity.ok(user);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<User> updatePharmacist(@PathVariable Long id, @Valid @RequestBody UserRequest request, Authentication authentication) throws Exception {
         User user = userPharmaManagerService.updatePharmacist(id, request, authentication.getName());
