@@ -4,7 +4,7 @@ import com.pharmavita.pharmacy_backend.models.AuditLog;
 import com.pharmavita.pharmacy_backend.models.Role;
 import com.pharmavita.pharmacy_backend.models.User;
 import com.pharmavita.pharmacy_backend.models.records.UserRequest;
-import com.pharmavita.pharmacy_backend.repositories.AuditLogRepositoy;
+import com.pharmavita.pharmacy_backend.repositories.AuditLogRepository;
 import com.pharmavita.pharmacy_backend.repositories.UserRepository;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserPharmaManagerService {
     private final UserRepository userRepository;
-    private final AuditLogRepositoy auditLogRepositoy;
+    private final AuditLogRepository auditLogRepository;
     private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder;
 
@@ -41,7 +41,7 @@ public class UserPharmaManagerService {
         log.setAction("Création du pharmacien: " + request.email());
         log.setPerformedBy(adminEmail);
         log.setTimestamp(LocalDateTime.now());
-        auditLogRepositoy.save(log);
+        auditLogRepository.save(log);
 
         emailService.sendWelcomeEmail(request.email(), request.firstname(), request.email(), password);
 
@@ -86,7 +86,7 @@ public class UserPharmaManagerService {
         log.setAction("Mise à jour du pharmacien: " + request.email());
         log.setPerformedBy(adminEmail);
         log.setTimestamp(LocalDateTime.now());
-        auditLogRepositoy.save(log);
+        auditLogRepository.save(log);
 
         // Envoyer l'email si l'email a changé
         if (emailChanged && newPassword != null) {
@@ -97,7 +97,7 @@ public class UserPharmaManagerService {
             emailLog.setAction("Envoi des nouveaux identifiants à: " + request.email());
             emailLog.setPerformedBy(adminEmail);
             emailLog.setTimestamp(LocalDateTime.now());
-            auditLogRepositoy.save(emailLog);
+            auditLogRepository.save(emailLog);
         }
 
         return user;
@@ -112,7 +112,7 @@ public class UserPharmaManagerService {
         log.setAction("Suppression du pharmacien: " + user.getEmail());
         log.setPerformedBy(adminEmail);
         log.setTimestamp(LocalDateTime.now());
-        auditLogRepositoy.save(log);
+        auditLogRepository.save(log);
     }
 
     private String generatePassword() {

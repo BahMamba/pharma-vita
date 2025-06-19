@@ -4,4 +4,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.pharmavita.pharmacy_backend.models.AuditLog;
 
-public interface AuditLogRepositoy extends JpaRepository<AuditLog, Long>{}
+public interface AuditLogRepository extends JpaRepository<AuditLog, Long>{}
