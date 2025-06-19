@@ -2,6 +2,8 @@ package com.pharmavita.pharmacy_backend.services;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale.Category;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
@@ -102,23 +104,20 @@ public class ProductManageService {
         if (filter == null || filter.isBlank()) {
             return productRepository.findAll(pageable);
         }
-
-        Page<Product> filteredProducts;
-
         try {
             int stockFilter = Integer.parseInt(filter);
-            filteredProducts = productRepository.findByStockGreaterThan(stockFilter, pageable);
-            if (filteredProducts.isEmpty()) {
-                filteredProducts = productRepository.findByStockLessThan(stockFilter, pageable);
+            Page<Product> products = productRepository.findByStockGreaterThan(stockFilter, pageable);
+            if (!products.isEmpty()) {
+                return products;
             }
+            return productRepository.findByStockLessThan(stockFilter, pageable);
         } catch (NumberFormatException e) {
-            filteredProducts = productRepository.findByNameContainingAllIgnoreCase(filter, pageable);
-            if (filteredProducts.isEmpty()) {
-                filteredProducts = productRepository.findByCategoryAllIgnoreCase(filter, pageable);
+            Page<Product> products = productRepository.findByNameContainingIgnoreCase(filter, pageable);
+            if (!products.isEmpty()) {
+                return products;
             }
+            return productRepository.findByCategory(Category.valueOf(filter.toUpperCase()), pageable);
         }
-
-        return filteredProducts;
     }
 
     // Methode pour la suppression d'un product

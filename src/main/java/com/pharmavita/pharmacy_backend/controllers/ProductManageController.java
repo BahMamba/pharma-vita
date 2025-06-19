@@ -62,7 +62,7 @@ public class ProductManageController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     public ResponseEntity<Product> getProduct(@PathVariable Long id){
         Product product = productManageService.getProductById(id);
         return ResponseEntity.ok(product);
@@ -70,13 +70,13 @@ public class ProductManageController {
 
     @PatchMapping("/{id}/stock")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Product> approvisProduct(@PathVariable Long id, @Valid @RequestBody StockUpdateRequest request, Authentication authentication){
-        return ResponseEntity.ok(productManageService.updateStock(id, request, authentication));
+    public ResponseEntity<Product> updateStock(@PathVariable Long id, @Valid @RequestBody StockUpdateRequest request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(productManageService.updateStock(id, request, authentication));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id, Authentication authentication){
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id, Authentication authentication){
         productManageService.deleteProduct(id, authentication);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
