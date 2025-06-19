@@ -7,7 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-import com.pharmavita.pharmacy_backend.controllers.AdminController;
 import com.pharmavita.pharmacy_backend.models.AuditLog;
 import com.pharmavita.pharmacy_backend.models.Product;
 import com.pharmavita.pharmacy_backend.models.records.AuditLogRequest;
@@ -22,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProductManageService {
 
-    private final AdminController adminController;
     private final ProductRepository productRepository;
     private final AuditLogRepository auditLogRepository;
 
