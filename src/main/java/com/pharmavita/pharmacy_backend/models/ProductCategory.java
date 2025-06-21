@@ -1,0 +1,26 @@
+package com.pharmavita.pharmacy_backend.models;
+
+public enum ProductCategory {
+    ESSENTIELS,
+    ANTIBIOTIQUES,
+    ANTIFONGIQUES,
+    ANTIVIRAUX,
+    ANTIPARASITAIRES,
+    ANALGESIQUES,
+    ANTIPYRETIQUES,
+    VACCINS,
+    VITAMINES,
+    DERMATOLOGIE,
+    GYNECOLOGIE,
+    PEDIATRIE,
+    CARDIAQUES,
+    DIABETE,
+    RESPIRATOIRE,
+    GASTRIQUE,
+    NEUROLOGIE,
+    OPHTALMOLOGIE,
+    UROLOGIE,
+    HYGIENIQUE,
+    COSMETIQUES,
+    DISPOSITIFS
+}

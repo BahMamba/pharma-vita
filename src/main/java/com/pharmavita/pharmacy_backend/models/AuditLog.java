@@ -12,10 +12,9 @@ public class AuditLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String entityType;
 
-    @Column(nullable = false)
+    @Column(name = "action_type")
     private String action;
 
     @Column(nullable = false)
