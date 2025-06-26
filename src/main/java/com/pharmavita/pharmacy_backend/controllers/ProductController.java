@@ -1,6 +1,5 @@
 package com.pharmavita.pharmacy_backend.controllers;
 
-import com.pharmavita.pharmacy_backend.models.AuditLog;
 import com.pharmavita.pharmacy_backend.models.ProductCategory;
 import com.pharmavita.pharmacy_backend.models.Product;
 import com.pharmavita.pharmacy_backend.models.records.ProductRequest;
@@ -78,11 +77,6 @@ public class ProductController {
         return ResponseEntity.accepted().body(updatedProduct);
     }
 
-    @GetMapping("/{id}/restock-history")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<AuditLog>> getRestockHistory(@PathVariable Long id) {
-        return ResponseEntity.ok(productService.getRestockHistory(id));
-    }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")

@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +54,19 @@ public class ProductService {
         log.setPerformedBy(performedBy);
         log.setTimestamp(LocalDateTime.now());
         auditLogRepository.save(log);
+    }
+
+    public void sellProduct(Long id, int quantity){
+        Product product = getProductById(id);
+        
+        if (product.getStock() < quantity) {
+            throw new IllegalArgumentException("Pas assez de stock pour " + product.getName());
+        }
+        product.setStock(product.getStock() - quantity);
+
+        product.setStatus(determineStatus(product.getStock()));
+
+        productRepository.save(product);
     }
 
     public Product getProductById(Long id) {
@@ -107,23 +119,23 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(filter, pageable);
     }
 
-public Page<Product> getProductsForRestock(String filter, Pageable pageable) {
-    if (filter == null || filter.isBlank()) {
-        return productRepository.findAll(pageable); 
+    public Page<Product> getProductsForRestock(String filter, Pageable pageable) {
+        if (filter == null || filter.isBlank()) {
+            return productRepository.findAll(pageable); 
+        }
+        if (filter.startsWith("status:")) {
+            String status = filter.substring(7).toUpperCase();
+            return productRepository.findByStatus(ProductStatus.valueOf(status), pageable);
+        }
+        try {
+            int stockFilter = Integer.parseInt(filter);
+            Page<Product> products = productRepository.findByStockLessThan(stockFilter, pageable);
+            if (!products.isEmpty()) return products;
+            return productRepository.findByStockGreaterThan(stockFilter, pageable);
+        } catch (NumberFormatException e) {
+            return productRepository.findAll(pageable); 
+        }
     }
-    if (filter.startsWith("status:")) {
-        String status = filter.substring(7).toUpperCase();
-        return productRepository.findByStatus(ProductStatus.valueOf(status), pageable);
-    }
-    try {
-        int stockFilter = Integer.parseInt(filter);
-        Page<Product> products = productRepository.findByStockLessThan(stockFilter, pageable);
-        if (!products.isEmpty()) return products;
-        return productRepository.findByStockGreaterThan(stockFilter, pageable);
-    } catch (NumberFormatException e) {
-        return productRepository.findAll(pageable); 
-    }
-}
 
     public void deleteProduct(Long id, Authentication auth) {
         Product product = getProductById(id);
@@ -132,37 +144,38 @@ public Page<Product> getProductsForRestock(String filter, Pageable pageable) {
     }
 
     public Product updateStock(Long id, StockUpdateRequest request, Authentication auth) {
-    Product product = getProductById(id);
-    int newStock = product.getStock() + request.stockChange();
-    if (newStock < 0) {
-        throw new IllegalArgumentException("Stock ne peut pas être négatif");
+        Product product = getProductById(id);
+        int newStock = product.getStock() + request.stockChange();
+        if (newStock < 0) {
+            throw new IllegalArgumentException("Stock ne peut pas être négatif");
+        }
+
+        product.setStock(newStock);
+        product.setStatus(determineStatus(newStock));
+        product = productRepository.save(product);
+
+        StockUpdateRequest updatedRequest = new StockUpdateRequest(
+            request.stockChange(),
+            request.reason(),
+            LocalDate.now() 
+        );
+
+        auditLogAction(
+            id,
+            ACTION_STOCK,
+            String.format("Stock: %d -> %d, Raison: %s, Date: %s",
+                product.getStock() - request.stockChange(),
+                newStock,
+                updatedRequest.reason(),
+                updatedRequest.replenishmentDate()),
+            auth.getName()
+        );
+
+        return product;
     }
-
-    product.setStock(newStock);
-    product.setStatus(determineStatus(newStock));
-    product = productRepository.save(product);
-
-    StockUpdateRequest updatedRequest = new StockUpdateRequest(
-        request.stockChange(),
-        request.reason(),
-        LocalDate.now() 
-    );
-
-    auditLogAction(
-        id,
-        ACTION_STOCK,
-        String.format("Stock: %d -> %d, Raison: %s, Date: %s",
-            product.getStock() - request.stockChange(),
-            newStock,
-            updatedRequest.reason(),
-            updatedRequest.replenishmentDate()),
-        auth.getName()
-    );
-
-    return product;
+     
+    
+        
 }
-
-    public List<AuditLog> getRestockHistory(Long id) {
-        return auditLogRepository.findByEntityIdAndEntityTypeAndAction(id, ENTITY_TYPE, ACTION_STOCK);
-    }
-}
+    
+    
