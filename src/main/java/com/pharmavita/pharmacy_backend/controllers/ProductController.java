@@ -91,4 +91,9 @@ public class ProductController {
         List<String> categories = Arrays.stream(ProductCategory.values()).map(Enum::name).toList();
         return ResponseEntity.ok(categories);
     }
+
+    @GetMapping("/products")
+    public List<Product> getProductsByIds(@RequestParam("ids") List<Long> ids) {
+        return productService.findByIds(ids);
+    }
 }

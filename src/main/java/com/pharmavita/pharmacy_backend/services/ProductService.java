@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -173,7 +174,11 @@ public class ProductService {
 
         return product;
     }
-     
+    
+    public List<Product> findByIds(List<Long> ids) {
+        return productRepository.findByIdIn(ids);
+    
+    }
     
         
 }

@@ -42,7 +42,6 @@ public class EmailService {
             <p><strong>Email :</strong> %s</p>
             <p><strong>Mot de passe :</strong> %s</p>
             <p>Connectez-vous à <a href="http://localhost:4200/login">PharmaVita</a> avec vos nouveaux identifiants.</p>
-            <p><i>Changez votre mot de passe après votre première connexion.</i></p>
             """.formatted(firstname, email, password), true
         );
         mailSender.send(message);

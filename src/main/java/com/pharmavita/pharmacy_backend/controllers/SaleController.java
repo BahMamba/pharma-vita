@@ -33,8 +33,15 @@ public class SaleController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
-    public ResponseEntity<Sale> createSale(@Valid @RequestBody SaleRequest request, Authentication authentication){
+    public ResponseEntity<Sale> createSale(@Valid @RequestBody SaleRequest request, Authentication authentication) {
         Sale sale = saleService.createSale(request, authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(sale);
+    }
+
+    @PostMapping("/draft")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
+    public ResponseEntity<Sale> createDraftSale(@Valid @RequestBody SaleRequest request, Authentication authentication) {
+        Sale sale = saleService.createDraftSale(request, authentication);
         return ResponseEntity.status(HttpStatus.CREATED).body(sale);
     }
 

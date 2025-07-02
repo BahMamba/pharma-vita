@@ -36,15 +36,12 @@ public class SaleService {
     private final SaleItemRepository saleItemRepository;
     private final AuditLogPharmaRepository auditLogPharmaRepository;
 
-    // Constantes pour les logs
     private static final String ENTITY_TYPE = "SALE";
     private static final String ACTION_CREATE = "CREATE";
     private static final String ACTION_VIEW = "VIEW";
     private static final String ACTION_RECEIPT = "RECEIPT";
 
-    // Methodes utilitaire
-
-    public void auditLogAction(Long id, String actionType, String details, String performedBy){
+    public void auditLogAction(Long id, String actionType, String details, String performedBy) {
         AuditLogPharma log = new AuditLogPharma();
         log.setEntityId(id);
         log.setEntityType(ENTITY_TYPE);
@@ -80,20 +77,47 @@ public class SaleService {
         return sale;
     }
 
-    public Page<Sale> getAllSales(String performedBy, Pageable pageable){
-        if(performedBy != null){
+    // Nouvelle méthode pour créer un brouillon de vente
+    public Sale createDraftSale(SaleRequest request, Authentication auth) {
+        Sale sale = new Sale();
+        sale.setPerformedBy(auth.getName());
+        sale.setSaleDate(LocalDateTime.now());
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<SaleItem> items = new ArrayList<>();
+        for (SaleItemRequest itemRequest : request.items()) {
+            Product product = productService.getProductById(itemRequest.productId());
+            // Vérifier le stock sans le modifier
+            if (product.getStock() < itemRequest.quantity()) {
+                throw new IllegalArgumentException("Stock insuffisant pour le produit " + product.getName());
+            }
+            SaleItem item = new SaleItem();
+            item.setSale(sale);
+            item.setProduct(product);
+            item.setQuantity(itemRequest.quantity());
+            item.setUnitPrice(product.getPrice());
+            BigDecimal itemTotal = product.getPrice().multiply(new BigDecimal(itemRequest.quantity()));
+            totalAmount = totalAmount.add(itemTotal);
+            items.add(item);
+        }
+        sale.setItems(items);
+        sale.setSaleAmount(totalAmount);
+        return sale; // Ne pas sauvegarder, juste retourner le brouillon
+    }
+
+    public Page<Sale> getAllSales(String performedBy, Pageable pageable) {
+        if (performedBy != null) {
             return saleRepository.findByPerformedBy(performedBy, pageable);
         }
         return saleRepository.findAll(pageable);
-    } 
+    }
 
-    public Sale getSale(Long id, Authentication authentication){
+    public Sale getSale(Long id, Authentication authentication) {
         Sale sale = saleRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Vente non trouvee"));
         return sale;
     }
 
-    public byte[] generateReceipt(Long id, Authentication authentication){
+    public byte[] generateReceipt(Long id, Authentication authentication) {
         Sale sale = getSale(id, authentication);
         try {
             ByteArrayOutputStream b = new ByteArrayOutputStream();
@@ -112,19 +136,17 @@ public class SaleService {
             for (SaleItem item : sale.getItems()) {
                 table.addCell(item.getProduct().getName());
                 table.addCell(String.valueOf(item.getQuantity()));
-                table.addCell(item.getUnitPrice().toString() + "GNF");
-                BigDecimal itemTotal = item.getUnitPrice().multiply(new BigDecimal(item.getQuantity() + "GNF"));
-                table.addCell(itemTotal.toString());
+                table.addCell(item.getUnitPrice().toString() + " GNF");
+                BigDecimal itemTotal = item.getUnitPrice().multiply(new BigDecimal(item.getQuantity()));
+                table.addCell(itemTotal.toString() + " GNF");
             }
             document.add(table);
-            document.add(new Paragraph("Total: " + sale.getSaleAmount()));
+            document.add(new Paragraph("Total: " + sale.getSaleAmount() + " GNF"));
             document.close();
             auditLogAction(id, ACTION_RECEIPT, "Génération reçu PDF", authentication.getName());
             return b.toByteArray();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Erreur de generation du receipt" + e.getMessage());
+            throw new IllegalArgumentException("Erreur de generation du receipt: " + e.getMessage());
         }
     }
-    
-
 }
