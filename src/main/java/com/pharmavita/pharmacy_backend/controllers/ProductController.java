@@ -92,8 +92,4 @@ public class ProductController {
         return ResponseEntity.ok(categories);
     }
 
-    @GetMapping("/products")
-    public List<Product> getProductsByIds(@RequestParam("ids") List<Long> ids) {
-        return productService.findByIds(ids);
-    }
 }

@@ -1,3 +1,4 @@
+
 package com.pharmavita.pharmacy_backend.services;
 
 import com.pharmavita.pharmacy_backend.models.AuditLog;
@@ -16,8 +17,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
+/**
+ * Service pour gérer les produits (création, mise à jour, suppression, recherche, gestion de stock).
+ * Fournit des fonctionnalités pour administrer les produits avec audit des actions.
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -31,6 +35,13 @@ public class ProductService {
     private static final String ACTION_STOCK = "STOCK_UPDATE";
     private static final int LOW_STOCK_THRESHOLD = 10;
 
+    /**
+     * Valide les données d'un produit avant création ou mise à jour.
+     * Vérifie que la date d'expiration est postérieure à la date de fabrication et à la date actuelle.
+     *
+     * @param request Données du produit (nom, description, catégorie, prix, stock, dates).
+     * @throws IllegalArgumentException si les dates sont invalides.
+     */
     private void validateProduct(ProductRequest request) {
         if (request.expirationDate().isBefore(request.manufacturingDate())) {
             throw new IllegalArgumentException("Date d'expiration après fabrication");
@@ -40,41 +51,74 @@ public class ProductService {
         }
     }
 
+    /**
+     * Détermine le statut du produit en fonction de son stock.
+     *
+     * @param stock Quantité en stock.
+     * @return Statut du produit (OUT_OF_STOCK, LOW_STOCK, AVAILABLE).
+     */
     private ProductStatus determineStatus(int stock) {
         if (stock == 0) return ProductStatus.OUT_OF_STOCK;
         if (stock < LOW_STOCK_THRESHOLD) return ProductStatus.LOW_STOCK;
         return ProductStatus.AVAILABLE;
     }
 
+    /**
+     * Enregistre un log d'audit pour une action sur un produit.
+     *
+     * @param id           ID du produit.
+     * @param actionType   Type d'action (CREATE, UPDATE, DELETE, STOCK_UPDATE).
+     * @param details      Détails de l'action.
+     * @param performedBy  Email de l'utilisateur effectuant l'action.
+     */
     private void auditLogAction(Long id, String actionType, String details, String performedBy) {
         AuditLog log = new AuditLog();
         log.setEntityId(id);
         log.setEntityType(ENTITY_TYPE);
-        log.setAction(actionType); 
+        log.setAction(actionType);
         log.setDetails(details);
         log.setPerformedBy(performedBy);
         log.setTimestamp(LocalDateTime.now());
         auditLogRepository.save(log);
     }
 
-    public void sellProduct(Long id, int quantity){
+    /**
+     * Réduit le stock d'un produit lors d'une vente.
+     *
+     * @param id       ID du produit.
+     * @param quantity Quantité à soustraire du stock.
+     * @throws IllegalArgumentException si le produit n'existe pas ou si le stock est insuffisant.
+     */
+    public void sellProduct(Long id, int quantity) {
         Product product = getProductById(id);
-        
         if (product.getStock() < quantity) {
             throw new IllegalArgumentException("Pas assez de stock pour " + product.getName());
         }
         product.setStock(product.getStock() - quantity);
-
         product.setStatus(determineStatus(product.getStock()));
-
         productRepository.save(product);
     }
 
+    /**
+     * Récupère un produit par son ID.
+     *
+     * @param id ID du produit.
+     * @return   Produit trouvé.
+     * @throws IllegalArgumentException si le produit n'existe pas.
+     */
     public Product getProductById(Long id) {
         return productRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Produit non trouvé"));
     }
 
+    /**
+     * Crée un nouveau produit et enregistre un log d'audit.
+     *
+     * @param request Données du produit (nom, description, catégorie, prix, stock, dates).
+     * @param auth    Authentification de l'utilisateur effectuant l'action.
+     * @return        Produit créé.
+     * @throws IllegalArgumentException si les données du produit sont invalides.
+     */
     public Product createProduct(ProductRequest request, Authentication auth) {
         validateProduct(request);
         Product product = new Product();
@@ -91,6 +135,15 @@ public class ProductService {
         return product;
     }
 
+    /**
+     * Met à jour un produit existant et enregistre un log d'audit.
+     *
+     * @param id      ID du produit à mettre à jour.
+     * @param request Nouvelles données du produit.
+     * @param auth    Authentification de l'utilisateur effectuant l'action.
+     * @return        Produit mis à jour.
+     * @throws IllegalArgumentException si le produit n'existe pas ou si les données sont invalides.
+     */
     public Product updateProduct(Long id, ProductRequest request, Authentication auth) {
         Product product = getProductById(id);
         validateProduct(request);
@@ -109,6 +162,13 @@ public class ProductService {
         return product;
     }
 
+    /**
+     * Récupère une page de produits pour la vente, avec filtre optionnel par nom ou catégorie.
+     *
+     * @param filter   Filtre de recherche (nom ou "category:<catégorie>").
+     * @param pageable Paramètres de pagination et tri.
+     * @return         Page de produits correspondants.
+     */
     public Page<Product> getProductsForSale(String filter, Pageable pageable) {
         if (filter == null || filter.isBlank()) {
             return productRepository.findAll(pageable);
@@ -120,9 +180,16 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(filter, pageable);
     }
 
+    /**
+     * Récupère une page de produits pour le réapprovisionnement, avec filtre par statut ou stock.
+     *
+     * @param filter   Filtre de recherche (statut ou stock).
+     * @param pageable Paramètres de pagination et tri.
+     * @return         Page de produits correspondants.
+     */
     public Page<Product> getProductsForRestock(String filter, Pageable pageable) {
         if (filter == null || filter.isBlank()) {
-            return productRepository.findAll(pageable); 
+            return productRepository.findAll(pageable);
         }
         if (filter.startsWith("status:")) {
             String status = filter.substring(7).toUpperCase();
@@ -134,16 +201,32 @@ public class ProductService {
             if (!products.isEmpty()) return products;
             return productRepository.findByStockGreaterThan(stockFilter, pageable);
         } catch (NumberFormatException e) {
-            return productRepository.findAll(pageable); 
+            return productRepository.findAll(pageable);
         }
     }
 
+    /**
+     * Supprime un produit par son ID et enregistre un log d'audit.
+     *
+     * @param id   ID du produit à supprimer.
+     * @param auth Authentification de l'utilisateur effectuant l'action.
+     * @throws IllegalArgumentException si le produit n'existe pas.
+     */
     public void deleteProduct(Long id, Authentication auth) {
         Product product = getProductById(id);
         productRepository.deleteById(id);
         auditLogAction(id, ACTION_DELETE, "Suppression: " + product.getName(), auth.getName());
     }
 
+    /**
+     * Met à jour le stock d'un produit et enregistre un log d'audit.
+     *
+     * @param id      ID du produit.
+     * @param request Données de mise à jour du stock (changement, raison, date).
+     * @param auth    Authentification de l'utilisateur effectuant l'action.
+     * @return        Produit mis à jour.
+     * @throws IllegalArgumentException si le produit n'existe pas ou si le stock devient négatif.
+     */
     public Product updateStock(Long id, StockUpdateRequest request, Authentication auth) {
         Product product = getProductById(id);
         int newStock = product.getStock() + request.stockChange();
@@ -158,7 +241,7 @@ public class ProductService {
         StockUpdateRequest updatedRequest = new StockUpdateRequest(
             request.stockChange(),
             request.reason(),
-            LocalDate.now() 
+            LocalDate.now()
         );
 
         auditLogAction(
@@ -174,13 +257,5 @@ public class ProductService {
 
         return product;
     }
-    
-    public List<Product> findByIds(List<Long> ids) {
-        return productRepository.findByIdIn(ids);
-    
-    }
-    
-        
+
 }
-    
-    

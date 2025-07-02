@@ -59,7 +59,7 @@ public class SaleController {
     }
 
     @GetMapping("/my-sales")
-    @PreAuthorize("hasRole('PHARMACIST')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     public ResponseEntity<Page<Sale>> getMySales(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
